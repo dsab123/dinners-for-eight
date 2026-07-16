@@ -1,0 +1,8 @@
+node_modules/
+dist/
+cdk.out/
+*.log
+.DS_Store
+
+# Deploy wrapper holds real secrets — never commit it.
+infra/deploy.sh

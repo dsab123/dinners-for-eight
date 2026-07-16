@@ -1,0 +1,22 @@
+:root {
+  /* Color: a Sunday tablecloth, not a SaaS palette */
+  --ink: #263129;
+  --linen: #efe7d6;
+  --linen-raised: #f7f1e4;
+  --marigold: #d69a2d;
+  --marigold-ink: #7a5417;
+  --brick: #a6452e;
+  --sage: #4f7452;
+  --slate: #5c6b62;
+  --line: rgba(38, 49, 41, 0.14);
+
+  /* Type */
+  --font-display: "Fraunces", "Iowan Old Style", serif;
+  --font-body: "Inter", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", "SF Mono", monospace;
+
+  /* Layout */
+  --radius: 10px;
+  --card-max: 460px;
+  --shadow-card: 0 1px 2px rgba(38, 49, 41, 0.06), 0 8px 24px rgba(38, 49, 41, 0.08);
+}
