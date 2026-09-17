@@ -60,3 +60,9 @@ export interface MatchRun {
   unmatchedGuestIds: string[];
   switched?: RoleSwitch[];
 }
+
+export interface AppSettings {
+  eventDate: string;
+  emailSubject: string;
+  emailBody: string;
+}

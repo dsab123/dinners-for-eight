@@ -1,8 +1,9 @@
 import type { APIGatewayProxyEventV2 } from "aws-lambda";
 import { badRequest, forbidden, ok, serverError, unauthorized } from "../lib/http";
 import { bearerToken, verifySessionToken } from "../lib/auth";
-import { MATCHES_KEY, REGISTRATIONS_KEY, readJson } from "../lib/store";
+import { MATCHES_KEY, REGISTRATIONS_KEY, SETTINGS_KEY, readJson } from "../lib/store";
 import { sendGroupEmail } from "../lib/email";
+import { DEFAULT_SETTINGS } from "../lib/types";
 import type { MatchesFile, RegistrationsFile } from "../lib/types";
 
 function firstName(fullName: string): string {
@@ -25,10 +26,14 @@ export async function handler(event: APIGatewayProxyEventV2) {
     const session = await verifySessionToken(token);
     if (!session.isAdmin) return forbidden("Admins only.");
 
-    const [{ data: regs }, { data: matches }] = await Promise.all([
+    const [{ data: regs }, { data: matches }, { data: settings }] = await Promise.all([
       readJson<RegistrationsFile>(REGISTRATIONS_KEY, { registrations: [] }),
       readJson<MatchesFile>(MATCHES_KEY, { runs: [] }),
+      readJson(SETTINGS_KEY, DEFAULT_SETTINGS),
     ]);
+    // Falls back to the deploy-time EVENT_DATE env var until an admin sets
+    // one from the dashboard, so an existing deploy doesn't lose its date.
+    const eventDate = settings.eventDate.trim() || (process.env.EVENT_DATE?.trim() ?? "");
 
     const latestRun = matches.runs[0];
     if (!latestRun || latestRun.assignments.length === 0) {
@@ -64,6 +69,9 @@ export async function handler(event: APIGatewayProxyEventV2) {
           hostName: host.fullName,
           hostAddress: host.address,
           memberNames,
+          eventDate,
+          emailSubject: settings.emailSubject,
+          emailBody: settings.emailBody,
         });
         emailed++;
       } catch (err) {

@@ -37,7 +37,9 @@ export interface DinnersForEightStackProps extends cdk.StackProps {
     siteDomain?: string;
     certArn?: string;
     // Optional human-readable dinner date for the group email (e.g.
-    // "July 19, 2026"). Surfaces as the EVENT_DATE Lambda env var.
+    // "July 19, 2026"), used only until an admin sets one from the dashboard
+    // (Settings panel), which is stored in S3 and takes over from then on.
+    // Surfaces as the EVENT_DATE Lambda env var.
     eventDate?: string;
     // False on the bootstrap/ls paths, where CDK only wants to discover the
     // environment and no assets are built. When false we skip referencing the
@@ -162,6 +164,8 @@ export class DinnersForEightStack extends cdk.Stack {
     const memberLookupFn = makeFn("MemberLookupFn", "memberLookup.ts");
     const simulateFn = makeFn("SimulateFn", "simulate.ts");
     const emailGroupsFn = makeFn("EmailGroupsFn", "emailGroups.ts");
+    const getSettingsFn = makeFn("GetSettingsFn", "getSettings.ts");
+    const updateSettingsFn = makeFn("UpdateSettingsFn", "updateSettings.ts");
 
     dataBucket.grantReadWrite(requestMagicLinkFn); // no-op read/write, harmless
     dataBucket.grantReadWrite(registerFn);
@@ -173,6 +177,8 @@ export class DinnersForEightStack extends cdk.Stack {
     dataBucket.grantWrite(wipeDataFn);
     dataBucket.grantReadWrite(simulateFn);
     dataBucket.grantRead(emailGroupsFn);
+    dataBucket.grantRead(getSettingsFn);
+    dataBucket.grantWrite(updateSettingsFn);
 
     // Email is sent via Resend's HTTP API (see backend/src/lib/email.ts), so no
     // SES IAM permission is needed — the API key travels as a Lambda env var.
@@ -216,6 +222,8 @@ export class DinnersForEightStack extends cdk.Stack {
     addRoute("/admin/wipe", apigw.HttpMethod.POST, wipeDataFn);
     addRoute("/admin/simulate", apigw.HttpMethod.POST, simulateFn);
     addRoute("/admin/email-groups", apigw.HttpMethod.POST, emailGroupsFn);
+    addRoute("/admin/settings", apigw.HttpMethod.GET, getSettingsFn);
+    addRoute("/admin/settings", apigw.HttpMethod.POST, updateSettingsFn);
 
     // ---------- Deploy the built frontend, wiring in the API URL ----------
     const frontendDist = path.join(__dirname, "..", "..", "frontend", "dist");

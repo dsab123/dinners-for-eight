@@ -70,3 +70,4 @@ export async function updateJson<T>(
 
 export const REGISTRATIONS_KEY = "data/registrations.json";
 export const MATCHES_KEY = "data/matches.json";
+export const SETTINGS_KEY = "data/settings.json";

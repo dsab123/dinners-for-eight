@@ -71,6 +71,29 @@ export interface MatchesFile {
   runs: MatchRun[];
 }
 
+/**
+ * Runtime-editable config for the event date and group-email copy, set from
+ * the admin dashboard so neither needs a redeploy to change.
+ */
+export interface AppSettings {
+  /** Human-readable dinner date (e.g. "July 19, 2026"), or "" if not set. */
+  eventDate: string;
+  /**
+   * Optional override for the group-email subject. "" uses the built-in
+   * default (which mentions eventDate when set). Supports {{eventDate}},
+   * {{roster}}, {{hostName}}, {{hostAddress}} placeholders.
+   */
+  emailSubject: string;
+  /** Optional override for the group-email body, same placeholders as above. */
+  emailBody: string;
+}
+
+export const DEFAULT_SETTINGS: AppSettings = {
+  eventDate: "",
+  emailSubject: "",
+  emailBody: "",
+};
+
 export interface SessionTokenPayload {
   sub: string; // email
   fullName: string;

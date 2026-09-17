@@ -135,6 +135,15 @@ export const api = {
       "/admin/email-groups",
       { method: "POST" }
     ),
+
+  adminGetSettings: () =>
+    request<{ settings: import("../types").AppSettings }>("/admin/settings"),
+
+  adminUpdateSettings: (settings: import("../types").AppSettings) =>
+    request<{ settings: import("../types").AppSettings }>("/admin/settings", {
+      method: "POST",
+      body: JSON.stringify(settings),
+    }),
 };
 
 export { ApiError };

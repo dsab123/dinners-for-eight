@@ -4,7 +4,9 @@ import { api, ApiError } from "../api/client";
 import { MapView } from "../components/MapView";
 import { useAuth } from "../context/AuthContext";
 import { downloadRegistrationsCsv } from "../lib/registrations";
-import type { HostRegistration, GuestRegistration, MatchRun } from "../types";
+import type { AppSettings, HostRegistration, GuestRegistration, MatchRun } from "../types";
+
+const EMPTY_SETTINGS: AppSettings = { eventDate: "", emailSubject: "", emailBody: "" };
 
 export function AdminDashboardPage() {
   const { signOut } = useAuth();
@@ -19,23 +21,44 @@ export function AdminDashboardPage() {
   const [info, setInfo] = useState<string | null>(null);
   const [pendingConfirm, setPendingConfirm] = useState<null | "wipe" | "email">(null);
   const [busy, setBusy] = useState<null | "wipe" | "email" | "simulate">(null);
+  const [settings, setSettings] = useState<AppSettings>(EMPTY_SETTINGS);
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
+  const [settingsInfo, setSettingsInfo] = useState<string | null>(null);
 
   async function loadData() {
     setLoading(true);
     setError(null);
     try {
-      const [registrations, matches] = await Promise.all([
+      const [registrations, matches, settingsRes] = await Promise.all([
         api.adminListRegistrations(),
         api.adminGetLatestMatch(),
+        api.adminGetSettings(),
       ]);
       setHosts(registrations.hosts);
       setGuests(registrations.guests);
       setGuestPeopleCount(registrations.guestPeopleCount);
       setMatchRun(matches.latestRun);
+      setSettings(settingsRes.settings);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Couldn't load the dashboard.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleSaveSettings() {
+    setSavingSettings(true);
+    setSettingsError(null);
+    setSettingsInfo(null);
+    try {
+      const res = await api.adminUpdateSettings(settings);
+      setSettings(res.settings);
+      setSettingsInfo("Saved.");
+    } catch (err) {
+      setSettingsError(err instanceof ApiError ? err.message : "Couldn't save settings.");
+    } finally {
+      setSavingSettings(false);
     }
   }
 
@@ -234,6 +257,64 @@ export function AdminDashboardPage() {
               <div className="stat__value">{matchRun.unmatchedGuestIds.length}</div>
             </div>
           )}
+        </div>
+
+        <div className="panel" style={{ marginBottom: 24 }}>
+          <h2 className="panel__title">Event & email settings</h2>
+          <p className="field__hint" style={{ marginTop: -8, marginBottom: 16 }}>
+            Changes apply immediately — no redeploy needed.
+          </p>
+
+          <div className="field">
+            <label htmlFor="eventDate">Event date</label>
+            <input
+              id="eventDate"
+              type="text"
+              placeholder="e.g. July 19, 2026"
+              value={settings.eventDate}
+              onChange={(e) => setSettings({ ...settings, eventDate: e.target.value })}
+            />
+            <p className="field__hint">
+              Shown in the group email. Leave blank to ask each group to pick their own date.
+            </p>
+          </div>
+
+          <div className="field">
+            <label htmlFor="emailSubject">Email subject override (optional)</label>
+            <input
+              id="emailSubject"
+              type="text"
+              placeholder='Default: "Your Dinners for Eight group — on <date>"'
+              value={settings.emailSubject}
+              onChange={(e) => setSettings({ ...settings, emailSubject: e.target.value })}
+            />
+          </div>
+
+          <div className="field">
+            <label htmlFor="emailBody">Email message override (optional)</label>
+            <textarea
+              id="emailBody"
+              rows={6}
+              placeholder="Leave blank to use the default message."
+              value={settings.emailBody}
+              onChange={(e) => setSettings({ ...settings, emailBody: e.target.value })}
+            />
+            <p className="field__hint">
+              Placeholders: {"{{eventDate}}"}, {"{{roster}}"}, {"{{hostName}}"}, {"{{hostAddress}}"}
+            </p>
+          </div>
+
+          {settingsError && <p className="error-text">{settingsError}</p>}
+          {settingsInfo && <p className="info-text">{settingsInfo}</p>}
+
+          <button
+            className="btn btn--primary"
+            style={{ width: "auto" }}
+            onClick={handleSaveSettings}
+            disabled={savingSettings}
+          >
+            {savingSettings ? "Saving…" : "Save settings"}
+          </button>
         </div>
 
         <div className="dashboard-grid">
